@@ -1,8 +1,8 @@
-import { StateMachine } from "./StateMachine";
 import {
   MachineContext,
   EventObject,
   ActorRef,
+  ActorLogic,
   Snapshot,
   TransitionResult,
   Action,
@@ -24,18 +24,18 @@ export class Actor<
 > implements ActorRef<TContext, TEvent, TStateValue> {
   public readonly id: string;
   private snapshot: Snapshot<TContext, TStateValue>;
-  private machine: StateMachine<TContext, TEvent, TStateValue>;
+  private logic: ActorLogic<TContext, TEvent, TStateValue>;
   private subscribers: Set<(snapshot: Snapshot<TContext, TStateValue>) => void>;
   private lastSnapshot: Snapshot<TContext, TStateValue> | null = null;
 
   constructor(
-    machine: StateMachine<TContext, TEvent, TStateValue>,
+    logic: ActorLogic<TContext, TEvent, TStateValue>,
     id: string = crypto.randomUUID(),
   ) {
     this.id = id;
-    this.machine = machine;
+    this.logic = logic;
     this.subscribers = new Set();
-    const initialTransition = this.machine.getInitialTransition();
+    const initialTransition = this.logic.getInitialTransition();
     this.snapshot = initialTransition.snapshot;
     this.executeActions(initialTransition.actions, { type: INIT_EVENT_TYPE } as TEvent);
   }
@@ -106,7 +106,7 @@ export class Actor<
       // Get next state and actions (pure computation)
       const result:
         | TransitionResult<TContext, TStateValue, TEvent>
-        | undefined = this.machine.transition(this.snapshot, event);
+        | undefined = this.logic.transition(this.snapshot, event);
 
       if (!result) {
         return;

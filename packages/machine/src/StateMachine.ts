@@ -1,6 +1,7 @@
 import { assign as genericAssign } from "./actions";
 import {
   Action,
+  ActorLogic,
   InitialTransitionResult,
   TransitionConfig,
   TransitionResult,
@@ -20,7 +21,7 @@ export class StateMachine<
   TContext extends MachineContext,
   TEvent extends EventObject,
   TStateValue extends string,
-> {
+> implements ActorLogic<TContext, TEvent, TStateValue> {
   constructor(readonly config: MachineConfig<TContext, TEvent, TStateValue>) {}
 
   private resolveActions(

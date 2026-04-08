@@ -1,6 +1,7 @@
 import { describe, it, expectTypeOf } from 'vitest';
 import { setup } from '../../src/StateMachine';
 import { Actor } from '../../src/Actor';
+import type { ActorLogic } from '../../src/types';
 
 describe('Actor Type Safety', () => {
   // Define test types
@@ -62,6 +63,50 @@ describe('Actor Type Safety', () => {
       expectTypeOf(snapshot.status).toEqualTypeOf<
         'active' | 'done' | 'error' | 'stopped'
       >();
+    });
+  });
+
+  describe('Actor constructor', () => {
+    it('should accept generic ActorLogic, not only StateMachine', () => {
+      const logic: ActorLogic<TestContext, TestEvent, 'idle' | 'active'> = {
+        getInitialTransition: () => ({
+          snapshot: {
+            value: 'idle',
+            context: { count: 0, name: 'test' },
+            status: 'active',
+          },
+          actions: [],
+        }),
+        transition: (snapshot, event) => {
+          if (event.type === 'INCREMENT') {
+            return {
+              snapshot: {
+                value: 'active',
+                context: {
+                  ...snapshot.context,
+                  count: snapshot.context.count + event.amount,
+                },
+                status: snapshot.status,
+              },
+              actions: [],
+            };
+          }
+
+          return {
+            snapshot: {
+              value: 'idle',
+              context: { count: 0, name: snapshot.context.name },
+              status: snapshot.status,
+            },
+            actions: [],
+          };
+        },
+      };
+
+      const actor = new Actor(logic);
+
+      expectTypeOf(actor.getSnapshot().context).toEqualTypeOf<TestContext>();
+      expectTypeOf(actor.send).parameter(0).toEqualTypeOf<TestEvent>();
     });
   });
 

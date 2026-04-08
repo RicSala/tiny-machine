@@ -5,6 +5,7 @@ export type {
   MachineConfig,
   EventObject,
   Action,
+  ActorLogic,
   ActorRef,
   Snapshot,
   TransitionConfig,

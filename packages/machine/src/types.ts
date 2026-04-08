@@ -106,6 +106,22 @@ export interface ActorRef<
   matches: (stateValue: TStateValue) => boolean;
 }
 
+export interface ActorLogic<
+  TContext extends MachineContext,
+  TEvent extends EventObject,
+  TStateValue extends string,
+> {
+  getInitialTransition: () => InitialTransitionResult<
+    TContext,
+    TStateValue,
+    TEvent
+  >;
+  transition: (
+    snapshot: Snapshot<TContext, TStateValue>,
+    event: TEvent,
+  ) => TransitionResult<TContext, TStateValue, TEvent> | undefined;
+}
+
 export interface TransitionResult<
   TContext extends MachineContext,
   TStateValue extends string,

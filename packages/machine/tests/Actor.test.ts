@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { assign } from '../src/actions';
 import { setup } from '../src/StateMachine';
 import { Actor } from '../src/Actor';
-import type { MachineConfig, EventObject } from '../src/types';
+import type { ActorLogic, MachineConfig, EventObject } from '../src/types';
 
 interface TestContext {
   value: number;
@@ -209,6 +209,59 @@ describe('Actor', () => {
 
     expect(actor.getSnapshot().context.value).toBe(3);
     expect(seenValues).toEqual([3]);
+  });
+
+  it('should run generic actor logic implementations, not only state machines', () => {
+    const seenValues: number[] = [];
+
+    const logic: ActorLogic<TestContext, TestEvents, TestState> = {
+      getInitialTransition: () => ({
+        snapshot: {
+          value: 'idle',
+          context: { value: 0 },
+          status: 'active',
+        },
+        actions: [
+          {
+            type: 'logInitialValue',
+            exec: ({ context }) => {
+              seenValues.push(context.value);
+            },
+          },
+        ],
+      }),
+      transition: (snapshot, event) => {
+        if (event.type !== 'INCREMENT') {
+          return undefined;
+        }
+
+        return {
+          snapshot: {
+            value: 'idle',
+            context: { value: snapshot.context.value + 2 },
+            status: snapshot.status,
+          },
+          actions: [
+            {
+              type: 'logUpdatedValue',
+              exec: ({ context }) => {
+                seenValues.push(context.value);
+              },
+            },
+          ],
+        };
+      },
+    };
+
+    const actor = new Actor(logic);
+
+    expect(actor.getSnapshot().context.value).toBe(0);
+    expect(seenValues).toEqual([0]);
+
+    actor.send({ type: 'INCREMENT', amount: 1 });
+
+    expect(actor.getSnapshot().context.value).toBe(2);
+    expect(seenValues).toEqual([0, 2]);
   });
 
 });
