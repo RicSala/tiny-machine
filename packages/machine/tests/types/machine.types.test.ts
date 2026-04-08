@@ -58,10 +58,10 @@ describe('StateMachine Type Safety', () => {
             on: {
               INCREMENT: [
                 {
-                  guard: (ctx, evt) => {
-                    expectTypeOf(ctx).toEqualTypeOf<TestContext>();
-                    expectTypeOf(evt).toEqualTypeOf<TestEvent>();
-                    return ctx.count > 10;
+                  guard: ({ context, event }) => {
+                    expectTypeOf(context).toEqualTypeOf<TestContext>();
+                    expectTypeOf(event).toEqualTypeOf<TestEvent>();
+                    return context.count > 10;
                   },
                   target: 'active',
                 },

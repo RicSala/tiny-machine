@@ -120,7 +120,7 @@ describe('Timer Example', () => {
                   elapsed: context.elapsed + 1,
                 })),
               ],
-              guard: (context) => context.elapsed < context.duration,
+              guard: ({ context }) => context.elapsed < context.duration,
             },
           },
         },
@@ -222,7 +222,7 @@ describe('Timer Example', () => {
                   elapsed: context.elapsed + 1,
                 })),
               ],
-              guard: (context: TimerContext) =>
+              guard: ({ context }: { context: TimerContext }) =>
                 context.elapsed < context.duration,
             },
           },

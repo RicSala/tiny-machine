@@ -15,7 +15,7 @@ export type NoInfer<T> = [T][T extends any ? 0 : never];
 export type Guard<
   TContext extends MachineContext,
   TEvent extends EventObject,
-> = (context: TContext, event: TEvent) => boolean;
+> = (args: { context: TContext; event: TEvent }) => boolean;
 
 export interface ActionArgs<
   TContext extends MachineContext,

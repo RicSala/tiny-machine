@@ -67,7 +67,7 @@ const turnstileMachine = createMachine({
       on: {
         INSERT_COIN: [
           {
-            guard: (context) => context.coins + 1 >= REQUIRED_COINS,
+            guard: ({ context }) => context.coins + 1 >= REQUIRED_COINS,
             target: 'unlocked',
             actions: [
               assign(({ context }) => ({
@@ -143,7 +143,7 @@ const turnstileMachine = createMachine({
 
 const codeSample = `INSERT_COIN: [
   {
-    guard: (context) => context.coins + 1 >= 3,
+    guard: ({ context }) => context.coins + 1 >= 3,
     target: 'unlocked',
     actions: [
       assign(({ context }) => ({

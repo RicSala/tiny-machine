@@ -57,8 +57,8 @@ const formWizardMachine = createMachine({
       on: {
         NEXT: {
           target: 'planSelection',
-          guard: (ctx) =>
-            ctx.name.length > 0 && ctx.email.includes('@'),
+          guard: ({ context }) =>
+            context.name.length > 0 && context.email.includes('@'),
           actions: [assign(() => ({ errors: {} }))],
         },
         UPDATE_FIELD: {
@@ -75,7 +75,7 @@ const formWizardMachine = createMachine({
       on: {
         NEXT: {
           target: 'review',
-          guard: (ctx) => ctx.plan !== '',
+          guard: ({ context }) => context.plan !== '',
         },
         BACK: { target: 'personalInfo' },
         UPDATE_FIELD: {

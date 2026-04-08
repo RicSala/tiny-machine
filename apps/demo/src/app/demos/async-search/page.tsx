@@ -202,9 +202,9 @@ const searchMachine = createMachine({
         SUCCESS: {
           target: 'success',
           // GUARD: Only accept response if it matches current request!
-          guard: (ctx, event) => {
+          guard: ({ context, event }) => {
             if (event.type !== 'SUCCESS') return false;
-            return event.requestId === ctx.currentRequestId;
+            return event.requestId === context.currentRequestId;
           },
           actions: [
             assign(({ event }) => {

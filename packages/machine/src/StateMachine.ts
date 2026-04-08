@@ -85,7 +85,7 @@ export class StateMachine<
     return transitions.find((transition) => {
       if (!transition.guard) return true;
 
-      return transition.guard(context, event);
+      return transition.guard({ context, event });
     });
   }
 

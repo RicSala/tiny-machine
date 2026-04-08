@@ -176,7 +176,7 @@ const turnstileMachine = createMachine({
       on: {
         INSERT_COIN: {
           target: 'unlocked',
-          guard: (context) => context.coins >= 3,
+          guard: ({ context }) => context.coins >= 3,
         },
       },
     },
@@ -194,7 +194,7 @@ You can also provide an array of transitions for a single event. The machine wil
 ```typescript
 INSERT_COIN: [
   {
-    guard: (context) => context.coins + 1 >= 3,
+    guard: ({ context }) => context.coins + 1 >= 3,
     target: 'unlocked',
     actions: [
       assign(({ context }) => ({

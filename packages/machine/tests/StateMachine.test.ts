@@ -69,7 +69,7 @@ const createTestMachineWithGuards = () => {
                 count: context.count + 1,
               })),
             ],
-            guard: (context) => context.count < 2,
+            guard: ({ context }) => context.count < 2,
           },
         },
       },
@@ -250,7 +250,7 @@ describe('StateMachine', () => {
           on: {
             INCREMENT: [
               {
-                guard: (context) => context.count >= 10,
+                guard: ({ context }) => context.count >= 10,
                 actions: [
                   assign(({ context }) => ({
                     count: context.count + 100,
@@ -294,7 +294,7 @@ describe('StateMachine', () => {
         active: {
           on: {
             RESET: {
-              guard: (context) => context.count > 100,
+              guard: ({ context }) => context.count > 100,
               actions: [
                 assign(() => ({
                   count: 0,

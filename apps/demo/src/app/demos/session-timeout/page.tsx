@@ -151,7 +151,7 @@ const sessionMachine = createMachine({
       on: {
         TICK: {
           target: 'loggedOut',
-          guard: (ctx) => ctx.secondsRemaining <= 1,
+          guard: ({ context }) => context.secondsRemaining <= 1,
         },
         TICK_DECREMENT: {
           actions: [
