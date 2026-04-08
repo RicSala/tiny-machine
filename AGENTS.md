@@ -1,15 +1,18 @@
 ## What This Product Does
 
-Tourista is a React onboarding/product-tour library developed in a Turbo monorepo.
+`machine-turbo` is a Turbo monorepo for developing the `@tinystack/machine` library and its demo app together.
 
-- `packages/tourista`: the published library
-- `apps/touring-demo`: the demo/validation app that exercises the library API
+- `packages/machine`: the published finite state machine library
+- `apps/demo`: the Next.js demo app that acts as both validation surface and living documentation
 
-### Design Principles (enforce these in code)
+The library is intentionally small and educational. It focuses on explicit state transitions, typed context/events, and an API shape inspired by XState v5 without trying to match XState feature-for-feature.
 
-- **Hide complexity from the user**: using the library should be obvious. Only show internals in advanced cases.
-- **Consumer DX matters**: prefer APIs that read like intent, not machine plumbing.
-- **TypeScript should help the consumer**: preserve literal types when possible and favor APIs that unlock autocomplete.
+### Product Principles (enforce these in code)
+
+- **Keep the core small and legible**: this library is valuable partly because people can read it and understand how it works.
+- **Prefer explicit states over boolean soup**: the demo repeatedly teaches this idea; new examples and APIs should reinforce it.
+- **TypeScript is part of the product**: preserve the `setup({ types })` experience, literal state inference, and typed `assign()` ergonomics.
+- **The demo is not filler**: demo routes are user education, API validation, and regression coverage for real usage patterns.
 
 ## Tech Stack
 
@@ -17,33 +20,66 @@ Tourista is a React onboarding/product-tour library developed in a Turbo monorep
 - `turbo`
 - TypeScript
 - React 19
-- Next.js 15
-- `@tinystack/machine` for the tour state machine
-- `@floating-ui/react` for positioning
-- Vitest for package tests
-- ESLint
+- Next.js 16 App Router
+- Tailwind CSS 4
+- Radix UI primitives
+- shadcn/ui-style components in the demo app
+- `tsup` for packaging `@tinystack/machine`
+- Vitest for runtime and type tests
+- ESLint in the demo app
 
 ## Monorepo Structure
 
 Top-level:
 
-- `apps/touring-demo`: demo app for exercising the library in realistic flows
-- `packages/tourista/src`: library source
-- `packages/tourista/dist`: built package output
-- `packages/tourista/docs`: product/package docs
-- `packages/tourista/tests`: package tests
+- `packages/machine`: library source, tests, and package docs
+- `apps/demo`: demo app for showcasing machine patterns
 
 Important library areas:
 
-- `packages/tourista/src/hooks/useTour.ts`: public hook surface
-- `packages/tourista/src/helpers/tourMachineGenerator.ts`: machine generation and typed helpers
-- `packages/tourista/src/components/TourProvider.tsx`: active tour context/provider state
-- `packages/tourista/src/components/TourMachineReact.tsx`: runtime machine/actor wiring
+- `packages/machine/src/StateMachine.ts`: pure transition logic, transition selection, `setup()`
+- `packages/machine/src/Actor.ts`: runtime execution, subscriptions, action execution, snapshot lifecycle
+- `packages/machine/src/actions.ts`: `assign()` helper and action tagging
+- `packages/machine/src/types.ts`: public type surface and inference helpers
+- `packages/machine/src/index.ts`: package exports
+- `packages/machine/tests/StateMachine.test.ts`: runtime transition behavior
+- `packages/machine/tests/Actor.test.ts`: actor runtime behavior
+- `packages/machine/tests/types`: type-level contract tests
+- `packages/machine/tests/examples/timer.test.ts`: example-style machine coverage
 
 Important demo areas:
 
-- `apps/touring-demo/src/app/showcase`: feature showcase
-- `apps/touring-demo/src/app/optimized-demo`: more realistic end-to-end flows
+- `apps/demo/src/app/page.tsx`: demo index and positioning of the product
+- `apps/demo/src/app/demos/coin-turnstile/page.tsx`: ordered transition arrays and guard branching
+- `apps/demo/src/app/demos/async-search/page.tsx`: debouncing, async races, request identity
+- `apps/demo/src/app/demos/session-timeout/page.tsx`: timers, entry/exit cleanup, warning/logout flow
+- `apps/demo/src/app/demos/form-wizard/page.tsx`: guarded progression in multi-step flows
+- `apps/demo/src/app/demos/async-fetch/page.tsx`: impossible states vs boolean flags
+- `apps/demo/src/app/demos/toggle-confirm/page.tsx`: explicit confirmation states
+- `apps/demo/src/components/ui`: shared demo UI primitives
+
+Generated artifacts:
+
+- `packages/machine/dist`: build output from `tsup`
+- `apps/demo/.next`: Next.js build output
+
+Do not hand-edit generated output unless the user explicitly asks for that.
+
+## Architecture Notes
+
+The repo currently follows a clean split:
+
+- `StateMachine` is the pure model. It selects transitions, evaluates guards, and collects exit, transition, and entry actions.
+- `Actor` is the runtime. It owns the mutable snapshot, executes actions, notifies subscribers, and exposes `send`, `matches`, `start`, `stop`, and `getSnapshot`.
+- `assign()` is the context update primitive. `setup({ types })` returns a typed `assign()` and `createMachine()` so consumers get inference for context, events, and state values.
+
+Behavior worth preserving:
+
+- transition arrays are first-match-wins
+- root-level `on` acts as fallback when no state-level transition is enabled
+- `reenter: true` forces exit/entry actions even for same-state transitions
+- `machine.can(snapshot, event)` is a pure query over the transition model
+- snapshot typing and `assign()` inference are protected by dedicated type tests
 
 ## Essential Commands
 
@@ -52,86 +88,99 @@ Repo-level:
 - `pnpm dev`
 - `pnpm build`
 - `pnpm lint`
-- `pnpm type:check`
 - `pnpm test`
+- `pnpm typecheck`
 
 Package-level:
 
-- `pnpm --filter tourista build`
-- `pnpm --filter tourista type:check`
-- `pnpm --filter tourista test`
-- `pnpm --filter touring-demo build`
-- `pnpm --filter touring-demo lint`
+- `pnpm --filter @tinystack/machine build`
+- `pnpm --filter @tinystack/machine dev`
+- `pnpm --filter @tinystack/machine test`
+- `pnpm --filter @tinystack/machine test:watch`
+- `pnpm --filter @tinystack/machine test:types`
+- `pnpm --filter @tinystack/machine typecheck`
+- `pnpm --filter @tinystack/machine-demo dev`
+- `pnpm --filter @tinystack/machine-demo build`
+- `pnpm --filter @tinystack/machine-demo lint`
+- `pnpm --filter @tinystack/machine-demo typecheck`
+
+## Known Repo Quirks
+
+- The root script `pnpm type:check` is currently broken because the workspace uses `typecheck`, not `type:check`. Use `pnpm typecheck`.
+- `apps/demo/README.md` is still the default Next.js starter README and is not trustworthy as project documentation.
+- Next.js builds currently emit a `baseline-browser-mapping` staleness warning. It is noisy but non-blocking.
+- There may be active in-progress edits in the worktree. Never revert unrelated changes you did not make.
 
 ## Testing
 
-When changing library behavior:
+When changing library behavior or public types:
 
-- run `pnpm --filter tourista type:check`
-- run `pnpm --filter tourista build`
-- run `pnpm --filter tourista test` when logic/state-machine behavior changes
-- run `pnpm --filter touring-demo build` when public API or consumer behavior changes
+- run `pnpm --filter @tinystack/machine typecheck`
+- run `pnpm --filter @tinystack/machine build`
+- run `pnpm --filter @tinystack/machine test`
+- run `pnpm --filter @tinystack/machine-demo typecheck` if consumer typing may be affected
+- run `pnpm --filter @tinystack/machine-demo build` if demo usage or public API changed
 
-When changing docs/examples only:
+When changing demo behavior only:
 
-- verify the examples reflect the current API surface
-- update drifted docs in `packages/tourista/docs`
+- run `pnpm --filter @tinystack/machine-demo lint`
+- run `pnpm --filter @tinystack/machine-demo typecheck`
+- run `pnpm --filter @tinystack/machine-demo build` for meaningful route/UI changes
 
-If you change the public library API, verify both the library package and the demo app.
+When changing docs only:
+
+- verify examples still match the current `setup`, `createMachine`, `Actor`, and `assign` APIs
+- update drifted docs in the same turn when practical
 
 ## Documentation
 
-Docs are part of the product. Keep them in sync with the implementation.
+Docs are currently spread across a few places:
 
-- Primary docs live in `packages/tourista/docs`
-- Demo usage in `apps/touring-demo` also acts as living documentation
-- If the code changes the preferred API, update docs in the same turn when practical
-- When you need to read docs, use SUMMARY.md as map
+- `packages/machine/README.md`: primary product and API documentation
+- `packages/machine/CHANGELOG.md`: release and API evolution notes
+- `apps/demo/src/app/demos/*`: living examples of intended usage
+- `README.md`: short workspace overview
+
+There is no dedicated docs site or `SUMMARY.md` map in this repo right now. Do not reference nonexistent docs structure from other projects.
+
+If you change:
+
+- library API: update `packages/machine/README.md` and relevant demo routes
+- demo routes or preferred examples: update demo copy so the app remains good teaching material
+- workflow commands: update `README.md` and this file when practical
 
 ## Coding Style
 
-It is important that you respect this coding style guide. In general, the main principle is "favor habitability of the codebase over cleverness or optimization", and reduce the cognitive load necessary to review a section of code.
+Favor habitability over cleverness. This repo is small enough that readability and locality matter more than abstraction density.
 
-- **Locality of behavior**: Code that changes together should remain together or at least close
-- **Code should be legible**: by itself. Code should be clear and read like a novel. That means clear naming.
-- **Keep the main path at the lowest possible level of indentation**: Use early returns
-- **Functions should be at one level of abstraction**
-- **When a function has more than 3 parameters use an object**
-- **Avoid excessive indirection**: Do not abstract unless there is a reason to do so, usually 3 or more uses of the same code
-- **The open/closed principle**: Structure the code such that we can extend it instead of modify it
-- **When you abstract, make it deep**: Hide complexity behind the abstraction. Small surface area.
-- **The use case defines the API**: Purism leaks logic. Instead the API should provide what the use case needs.
+- Keep pure machine logic in the machine definition or `StateMachine` layer; keep runtime concerns in `Actor`.
+- Prefer explicit, named states and events over implicit boolean combinations.
+- Keep machine config readable: named `Context` and `Event` types, obvious state names, shallow indentation, and early returns.
+- Preserve the current consumer-facing API shape unless there is a strong reason to change it.
+- Prefer `setup({ types })` for typed examples and tests instead of untyped shortcuts.
+- Avoid leaking non-domain implementation details into machine context when a local timer/ref/WeakMap is a better fit.
+- Add abstraction only when it actually reduces repetition or clarifies the model.
+- Comment sparingly. Most machine configs should explain themselves through naming.
 
-Be pragmatic applying these principles.
-Be useful, not smart.
-Favor simplicity and reduce indirection.
+Be pragmatic.
+Be useful, not clever.
+Prefer clarity over indirection.
 
-## Shadcn
+## Working Conventions
 
-Use the CLI.
-
-- List items in registries: `pnpm dlx shadcn search @shadcn --limit X --offset Y`
-- Search items in registries: `pnpm dlx shadcn search @shadcn --query "button"`
-- Get item examples from registries: `pnpm dlx shadcn search @shadcn --query "button-demo"`
+- Fix root causes, not surface symptoms.
+- Treat type tests as part of the public API contract, not as optional extras.
+- When changing library semantics, inspect both runtime tests and demo routes because the demo is effectively an integration suite.
+- Prefer adding or refining examples when introducing a new pattern; this project teaches through concrete demos.
+- One-off scripts or ad-hoc helpers should be written in Node.js, not Python.
+- If you research an external library, look for its `llm.txt` or official docs first.
+- `"Explain"`, `"Discuss"`, or `"Sketch"` means do not change code yet.
+- Suggest commits when we finish a coherent chunk of work.
 
 ## Cowboy Rule
 
-Leave things better than they were when you started.
+Leave the repo more truthful than you found it.
 
-- After using docs, suggest potential improvements to avoid confusion
-- Make future AI agents smarter and more aware of the context
-- After coding sessions, always check feature documentation and fix drifting
-
-## Others
-
-- Fix root cause, not a band-aid
-- Use first-principles thinking. Understand the goal and suggest better approaches when fit.
-- Leave breadcrumb notes in the thread
-- When you need to research a library, search for the library `llm.txt` URL first
-- You need feedback; code accordingly and suggest feedback loops
-- `"Document research"` means create a detailed explanation in `docs/research`. Those are not product docs; they are explanations of patterns we are exploring or implementing.
-- Run tests before handoff for turns with significant changes
-- One-off script or ad-hoc helper: in Node.js, no Python
-- Comment only when necessary: hard logic or places that need explanation to avoid future regression
-- `"Explain"`, `"Discuss"`, `"Sketch"` from the user means do not change code yet
-- Suggest commits often: suggest the user commit changes before changing topics
+- Remove drift between implementation and docs when you touch an area
+- Update stale guidance files instead of working around them silently
+- Leave breadcrumb notes in the thread about quirks, risks, and useful validation commands

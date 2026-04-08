@@ -85,7 +85,7 @@ const fetchMachine = createMachine({
         SUCCESS: {
           target: 'success',
           actions: [
-            assign((_, event) => {
+            assign(({ event }) => {
               if (event.type !== 'SUCCESS') return {};
               return { data: event.data, error: null };
             }),
@@ -94,9 +94,9 @@ const fetchMachine = createMachine({
         ERROR: {
           target: 'error',
           actions: [
-            assign((ctx, event) => {
+            assign(({ context, event }) => {
               if (event.type !== 'ERROR') return {};
-              return { error: event.error, retryCount: ctx.retryCount + 1 };
+              return { error: event.error, retryCount: context.retryCount + 1 };
             }),
           ],
         },

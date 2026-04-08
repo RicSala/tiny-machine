@@ -57,18 +57,13 @@ const formWizardMachine = createMachine({
       on: {
         NEXT: {
           target: 'planSelection',
-          guards: [
-            {
-              type: 'hasPersonalInfo',
-              condition: (ctx) =>
-                ctx.name.length > 0 && ctx.email.includes('@'),
-            },
-          ],
+          guard: (ctx) =>
+            ctx.name.length > 0 && ctx.email.includes('@'),
           actions: [assign(() => ({ errors: {} }))],
         },
         UPDATE_FIELD: {
           actions: [
-            assign((ctx, event) => {
+            assign(({ event }) => {
               if (event.type !== 'UPDATE_FIELD') return {};
               return { [event.field]: event.value };
             }),
@@ -80,17 +75,12 @@ const formWizardMachine = createMachine({
       on: {
         NEXT: {
           target: 'review',
-          guards: [
-            {
-              type: 'hasPlanSelected',
-              condition: (ctx) => ctx.plan !== '',
-            },
-          ],
+          guard: (ctx) => ctx.plan !== '',
         },
         BACK: { target: 'personalInfo' },
         UPDATE_FIELD: {
           actions: [
-            assign((ctx, event) => {
+            assign(({ event }) => {
               if (event.type !== 'UPDATE_FIELD') return {};
               return { [event.field]: event.value };
             }),
@@ -127,7 +117,7 @@ const formWizardMachine = createMachine({
         SUBMIT_ERROR: {
           target: 'review',
           actions: [
-            assign((_, event) => {
+            assign(({ event }) => {
               if (event.type !== 'SUBMIT_ERROR') return {};
               return { errors: { submit: event.error } };
             }),
@@ -349,7 +339,7 @@ export default function FormWizardDemo() {
                 ) : (
                   <Button
                     onClick={() => actor.send({ type: 'NEXT' })}
-                    disabled={!actor.can({ type: 'NEXT' })}
+                    disabled={!formWizardMachine.can(snapshot, { type: 'NEXT' })}
                   >
                     Next
                   </Button>

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { ASSIGN_ACTION_TYPE } from '../src/actions';
 import { setup } from '../src/StateMachine';
 import { Actor } from '../src/Actor';
 import type { MachineConfig, EventObject } from '../src/types';
@@ -26,7 +27,7 @@ const createTestMachine = () => {
           INCREMENT: {
             actions: [
               {
-                type: 'xstate.assign',
+                type: ASSIGN_ACTION_TYPE,
                 exec: ({ context, event, self }) => ({
                   value: context.value + 1,
                 }),
@@ -136,11 +137,11 @@ describe('Actor', () => {
     expect(actor.matches('nonexistent')).toBe(false);
   });
 
-  it('should implement can correctly', () => {
+  it('should expose can as a pure machine query', () => {
     const machine = createTestMachine();
     const actor = new Actor(machine);
 
-    // expect(actor.can({ type: 'INCREMENT' })).toBe(true);
-    expect(actor.can({ type: 'NONEXISTENT' as any })).toBe(false);
+    expect(machine.can(actor.getSnapshot(), { type: 'INCREMENT' })).toBe(true);
+    expect(machine.can(actor.getSnapshot(), { type: 'NONEXISTENT' as any })).toBe(false);
   });
 });

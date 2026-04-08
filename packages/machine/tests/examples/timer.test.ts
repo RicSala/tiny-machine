@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { StateMachine, setup } from '../../src/StateMachine';
-import { assign } from '../../src/actions';
+import { ASSIGN_ACTION_TYPE, assign } from '../../src/actions';
 import { MachineConfig } from '../../src/types';
 import { Actor } from '../../src/Actor';
 
@@ -52,7 +52,7 @@ describe('Timer Example', () => {
             INITIALIZE: {
               target: 'ready',
               actions: [
-                assign((_context, event) => {
+                assign(({ event }) => {
                   // event is now typed as TimerEvent!
                   if (event.type !== 'INITIALIZE') return {};
                   return {
@@ -61,7 +61,7 @@ describe('Timer Example', () => {
                   };
                 }),
                 {
-                  type: 'xstate.assign',
+                  type: ASSIGN_ACTION_TYPE,
                   exec: ({ context, event, self }) => {
                     if (event.type !== 'INITIALIZE') return {};
                     self.matches('idle');
@@ -75,11 +75,11 @@ describe('Timer Example', () => {
             },
           },
           entry: [
-            assign((_context, _event) => ({
+            assign(() => ({
               elapsed: 0,
             })),
             {
-              type: 'xstate.assign',
+              type: ASSIGN_ACTION_TYPE,
               exec: ({ context, event, self }) => {
                 if (event.type !== 'INITIALIZE') return {};
                 return {
@@ -95,7 +95,7 @@ describe('Timer Example', () => {
             START: {
               target: 'running',
               actions: [
-                assign((context) => ({
+                assign<TimerContext, TimerEvent>(() => ({
                   interval: setInterval(() => {
                     // This will be mocked in tests
                   }, 1000) as unknown as number,
@@ -109,23 +109,18 @@ describe('Timer Example', () => {
             PAUSE: {
               target: 'paused',
               actions: [
-                timerSetup.assign((context) => {
+                timerSetup.assign(() => {
                   return { interval: null };
                 }),
               ],
             },
             TICK: {
               actions: [
-                timerSetup.assign((context) => ({
+                timerSetup.assign(({ context }) => ({
                   elapsed: context.elapsed + 1,
                 })),
               ],
-              guards: [
-                {
-                  type: 'notCompleted',
-                  condition: (context) => context.elapsed < context.duration,
-                },
-              ],
+              guard: (context) => context.elapsed < context.duration,
             },
           },
         },
@@ -193,7 +188,7 @@ describe('Timer Example', () => {
             INITIALIZE: {
               target: 'ready',
               actions: [
-                assign<TimerContext, TimerEvent>((context, event) => {
+                assign<TimerContext, TimerEvent>(({ event }) => {
                   if (event.type !== 'INITIALIZE') return {};
                   return {
                     duration: event.duration,
@@ -223,17 +218,12 @@ describe('Timer Example', () => {
           on: {
             TICK: {
               actions: [
-                assign<TimerContext, TimerEvent>((context) => ({
+                assign<TimerContext, TimerEvent>(({ context }) => ({
                   elapsed: context.elapsed + 1,
                 })),
               ],
-              guards: [
-                {
-                  type: 'notCompleted',
-                  condition: (context: TimerContext) =>
-                    context.elapsed < context.duration,
-                },
-              ],
+              guard: (context: TimerContext) =>
+                context.elapsed < context.duration,
             },
           },
         },

@@ -16,17 +16,17 @@ describe('StateMachine Type Safety', () => {
 
   describe('setup().assign()', () => {
     it('context parameter should be TestContext, not any', () => {
-      testSetup.assign((ctx, evt) => {
-        expectTypeOf(ctx).toEqualTypeOf<TestContext>();
-        expectTypeOf(ctx).not.toBeAny();
+      testSetup.assign(({ context, event }) => {
+        expectTypeOf(context).toEqualTypeOf<TestContext>();
+        expectTypeOf(context).not.toBeAny();
         return {};
       });
     });
 
     it('event parameter should be TestEvent, not any', () => {
-      testSetup.assign((ctx, evt) => {
-        expectTypeOf(evt).toEqualTypeOf<TestEvent>();
-        expectTypeOf(evt).not.toBeAny();
+      testSetup.assign(({ context, event }) => {
+        expectTypeOf(event).toEqualTypeOf<TestEvent>();
+        expectTypeOf(event).not.toBeAny();
         return {};
       });
     });
@@ -46,6 +46,38 @@ describe('StateMachine Type Safety', () => {
 
       type StateValue = ReturnType<typeof machine.getInitialSnapshot>['value'];
       expectTypeOf<StateValue>().toEqualTypeOf<'idle' | 'active'>();
+    });
+
+    it('should accept transition arrays and guard functions', () => {
+      testSetup.createMachine({
+        id: 'test',
+        initial: 'idle',
+        context: { count: 0, name: 'test' },
+        states: {
+          idle: {
+            on: {
+              INCREMENT: [
+                {
+                  guard: (ctx, evt) => {
+                    expectTypeOf(ctx).toEqualTypeOf<TestContext>();
+                    expectTypeOf(evt).toEqualTypeOf<TestEvent>();
+                    return ctx.count > 10;
+                  },
+                  target: 'active',
+                },
+                {
+                  actions: [
+                    testSetup.assign(({ context }) => ({
+                      count: context.count + 1,
+                    })),
+                  ],
+                },
+              ],
+            },
+          },
+          active: {},
+        },
+      });
     });
   });
 
@@ -82,7 +114,7 @@ describe('StateMachine Type Safety', () => {
 
     it('assign should not accept wrong context properties', () => {
       // @ts-expect-error - 'invalid' is not a property of TestContext
-      testSetup.assign((ctx) => {
+      testSetup.assign(({ context }) => {
         return { invalid: 123 };
       });
     });

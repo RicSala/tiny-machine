@@ -106,24 +106,34 @@ describe('Actor Type Safety', () => {
     });
   });
 
-  describe('Actor.can()', () => {
+  describe('StateMachine.can()', () => {
     it('should accept valid events', () => {
       const machine = createTestMachine();
       const actor = new Actor(machine);
 
-      const canIncrement = actor.can({ type: 'INCREMENT', amount: 1 });
-      const canReset = actor.can({ type: 'RESET' });
+      const canIncrement = machine.can(actor.getSnapshot(), {
+        type: 'INCREMENT',
+        amount: 1,
+      });
+      const canReset = machine.can(actor.getSnapshot(), { type: 'RESET' });
 
       expectTypeOf(canIncrement).toEqualTypeOf<boolean>();
       expectTypeOf(canReset).toEqualTypeOf<boolean>();
     });
 
-    it('parameter should be TestEvent, not any', () => {
+    it('event parameter should be TestEvent, not any', () => {
       const machine = createTestMachine();
-      const actor = new Actor(machine);
 
-      expectTypeOf(actor.can).parameter(0).toEqualTypeOf<TestEvent>();
-      expectTypeOf(actor.can).parameter(0).not.toBeAny();
+      expectTypeOf(machine.can).parameter(1).toEqualTypeOf<TestEvent>();
+      expectTypeOf(machine.can).parameter(1).not.toBeAny();
+    });
+
+    it('snapshot parameter should be properly typed', () => {
+      const machine = createTestMachine();
+
+      expectTypeOf(machine.can).parameter(0).toEqualTypeOf<
+        ReturnType<typeof machine.getInitialSnapshot>
+      >();
     });
   });
 
@@ -182,12 +192,12 @@ describe('Actor Type Safety', () => {
       actor.matches(123);
     });
 
-    it('can should not accept invalid event types', () => {
+    it('machine.can should not accept invalid event types', () => {
       const machine = createTestMachine();
       const actor = new Actor(machine);
 
       // @ts-expect-error - 'INVALID' is not a valid event type
-      actor.can({ type: 'INVALID' });
+      machine.can(actor.getSnapshot(), { type: 'INVALID' });
     });
   });
 });

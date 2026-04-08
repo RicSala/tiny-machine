@@ -15,11 +15,11 @@ interface TestEvents extends EventObject {
 type TestState = 'active';
 
 const createTestMachine = () => {
-  const incrementAction = assign<TestContext, TestEvents>((context) => ({
+  const incrementAction = assign<TestContext, TestEvents>(({ context }) => ({
     count: context.count + 1,
   }));
 
-  const decrementAction = assign<TestContext, TestEvents>((context) => ({
+  const decrementAction = assign<TestContext, TestEvents>(({ context }) => ({
     count: context.count - 1,
   }));
 
@@ -65,16 +65,11 @@ const createTestMachineWithGuards = () => {
         on: {
           INCREMENT: {
             actions: [
-              assign((context, event) => ({
+              assign(({ context }) => ({
                 count: context.count + 1,
               })),
             ],
-            guards: [
-              {
-                type: 'maxCount',
-                condition: (context) => context.count < 2,
-              },
-            ],
+            guard: (context) => context.count < 2,
           },
         },
       },
@@ -169,11 +164,11 @@ describe('StateMachine', () => {
               target: 'active',
               reenter: true,
               actions: [
-                assign((context) => ({
-                  count: context.count + 1,
-                })),
-              ],
-            },
+              assign(({ context }) => ({
+                count: context.count + 1,
+              })),
+            ],
+          },
           },
         },
       },
@@ -209,5 +204,77 @@ describe('StateMachine', () => {
     // Third increment should be blocked by guard
     actor.send({ type: 'INCREMENT' });
     expect(actor.getSnapshot().context.count).toBe(2); // Count should remain at 2
+  });
+
+  it('should select the first enabled transition from an array', () => {
+    const machine = new StateMachine<TestContext, TestEvents, TestState>({
+      id: 'counter',
+      initial: 'active',
+      context: { count: 0 },
+      states: {
+        active: {
+          on: {
+            INCREMENT: [
+              {
+                guard: (context) => context.count >= 10,
+                actions: [
+                  assign(({ context }) => ({
+                    count: context.count + 100,
+                  })),
+                ],
+              },
+              {
+                actions: [
+                  assign(({ context }) => ({
+                    count: context.count + 1,
+                  })),
+                ],
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    const actor = new Actor<TestContext, TestEvents, TestState>(machine);
+    actor.send({ type: 'INCREMENT' });
+
+    expect(actor.getSnapshot().context.count).toBe(1);
+  });
+
+  it('should fall back to root transitions when no state transition is enabled', () => {
+    const machine = new StateMachine<TestContext, TestEvents, TestState>({
+      id: 'counter',
+      initial: 'active',
+      context: { count: 0 },
+      on: {
+        RESET: {
+          actions: [
+            assign(() => ({
+              count: 99,
+            })),
+          ],
+        },
+      },
+      states: {
+        active: {
+          on: {
+            RESET: {
+              guard: (context) => context.count > 100,
+              actions: [
+                assign(() => ({
+                  count: 0,
+                })),
+              ],
+            },
+          },
+        },
+      },
+    });
+
+    const actor = new Actor<TestContext, TestEvents, TestState>(machine);
+    actor.send({ type: 'RESET' });
+
+    expect(actor.getSnapshot().context.count).toBe(99);
   });
 });

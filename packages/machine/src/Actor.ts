@@ -1,4 +1,5 @@
-import { StateMachine } from './StateMachine';
+import { ASSIGN_ACTION_TYPE } from "./actions";
+import { StateMachine } from "./StateMachine";
 import {
   MachineContext,
   EventObject,
@@ -6,7 +7,9 @@ import {
   Snapshot,
   TransitionResult,
   Action,
-} from './types';
+} from "./types";
+
+const INIT_EVENT_TYPE = "$init";
 
 /**
  * Responsibilities:
@@ -18,9 +21,8 @@ import {
 export class Actor<
   TContext extends MachineContext,
   TEvent extends EventObject,
-  TStateValue extends string
-> implements ActorRef<TContext, TEvent, TStateValue>
-{
+  TStateValue extends string,
+> implements ActorRef<TContext, TEvent, TStateValue> {
   public readonly id: string;
   private snapshot: Snapshot<TContext, TStateValue>;
   private machine: StateMachine<TContext, TEvent, TStateValue>;
@@ -29,28 +31,22 @@ export class Actor<
 
   constructor(
     machine: StateMachine<TContext, TEvent, TStateValue>,
-    id: string = crypto.randomUUID()
+    id: string = crypto.randomUUID(),
   ) {
     this.id = id;
     this.machine = machine;
-    this.snapshot = machine.getInitialSnapshot();
     this.subscribers = new Set();
-
-    // check initial state entry actions
-    const initialState =
-      this.machine.config.states[this.machine.config.initial];
-    if (initialState.entry) {
-      const actions = Array.isArray(initialState.entry)
-        ? initialState.entry
-        : [initialState.entry];
-      actions.forEach((action: Action<TContext, TEvent, TStateValue>) => {
-        action.exec({
-          context: this.machine.config.context,
-          event: { type: '$init' } as TEvent,
-          self: this,
-        });
-      });
-    }
+    const initialTransition = this.machine.getInitialTransition();
+    const initEvent = { type: INIT_EVENT_TYPE } as TEvent;
+    const initialContext = this.executeActions(
+      initialTransition.actions,
+      initEvent,
+      initialTransition.snapshot.context,
+    );
+    this.snapshot = {
+      ...initialTransition.snapshot,
+      context: initialContext,
+    };
   }
 
   getSnapshot = (): Snapshot<TContext, TStateValue> => {
@@ -81,13 +77,13 @@ export class Actor<
       try {
         subscriber(snapshot);
       } catch (error) {
-        console.error('Error in subscriber:', error);
+        console.error("Error in subscriber:", error);
       }
     });
   }
 
   subscribe = (
-    callback: (snapshot: Snapshot<TContext, TStateValue>) => void
+    callback: (snapshot: Snapshot<TContext, TStateValue>) => void,
   ): (() => void) => {
     // Add the subscriber first
     this.subscribers.add(callback);
@@ -96,7 +92,7 @@ export class Actor<
     try {
       callback(this.getSnapshot());
     } catch (error) {
-      console.error('Error in initial subscriber notification:', error);
+      console.error("Error in initial subscriber notification:", error);
     }
 
     return () => {
@@ -106,10 +102,10 @@ export class Actor<
   };
 
   send = (event: TEvent): void => {
-    if (this.snapshot.status !== 'active') {
-      if (process.env.NODE_ENV === 'development') {
+    if (this.snapshot.status !== "active") {
+      if (process.env.NODE_ENV === "development") {
         console.warn(
-          `Event "${event.type}" was sent to stopped actor "${this.id}"`
+          `Event "${event.type}" was sent to stopped actor "${this.id}"`,
         );
       }
       return;
@@ -149,32 +145,27 @@ export class Actor<
     return this.snapshot.value === stateValue;
   };
 
-  can = (event: TEvent): boolean => {
-    const transition = this.machine.transition(this.snapshot, event);
-    return !!transition;
-  };
-
   start = (): void => {
-    if (this.snapshot.status !== 'active') {
+    if (this.snapshot.status !== "active") {
       // Invalidate cache before updating status
       this.lastSnapshot = null;
 
       this.snapshot = {
         ...this.snapshot,
-        status: 'active',
+        status: "active",
       };
       this.notify();
     }
   };
 
   stop = (): void => {
-    if (this.snapshot.status !== 'stopped') {
+    if (this.snapshot.status !== "stopped") {
       // Invalidate cache before updating status
       this.lastSnapshot = null;
 
       this.snapshot = {
         ...this.snapshot,
-        status: 'stopped',
+        status: "stopped",
       };
       this.notify();
     }
@@ -182,13 +173,14 @@ export class Actor<
 
   private executeActions(
     actions: Action<TContext, TEvent, TStateValue>[],
-    event: TEvent
+    event: TEvent,
+    baseContext: TContext = this.snapshot.context,
   ): TContext {
-    let context = { ...this.snapshot.context };
+    let context = { ...baseContext };
 
     actions.forEach((action) => {
       // assign actions updates the context
-      if (action.type === 'xstate.assign') {
+      if (action.type === ASSIGN_ACTION_TYPE) {
         const updates = action.exec({
           context,
           event,
@@ -207,7 +199,7 @@ export class Actor<
   private handleError = (error: unknown): void => {
     this.snapshot = {
       ...this.snapshot,
-      status: 'error',
+      status: "error",
     };
     this.notify();
   };

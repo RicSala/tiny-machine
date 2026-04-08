@@ -11,6 +11,13 @@ import { Badge } from "@/components/ui/badge";
 
 const demos = [
   {
+    title: "Coin Turnstile",
+    description:
+      "A concrete example of ordered transition arrays: the third coin unlocks, earlier coins fall through.",
+    href: "/demos/coin-turnstile",
+    concepts: ["Transition Arrays", "Guard", "Context", "Self Transition"],
+  },
+  {
     title: "Async Search (Race Conditions)",
     description:
       "The classic bug everyone has shipped. Type quickly and watch stale responses get rejected.",

@@ -12,18 +12,15 @@ export type MachineContext = Record<string, any>;
 export type NoInfer<T> = [T][T extends any ? 0 : never];
 
 // MACHINE TYPES
-export interface Guard<
+export type Guard<
   TContext extends MachineContext,
-  TEvent extends EventObject
-> {
-  type: string;
-  condition: (context: TContext, event: TEvent) => boolean;
-}
+  TEvent extends EventObject,
+> = (context: TContext, event: TEvent) => boolean;
 
 export interface ActionArgs<
   TContext extends MachineContext,
   TEvent extends EventObject,
-  TStateValue extends string
+  TStateValue extends string,
 > {
   context: TContext;
   event: TEvent;
@@ -33,21 +30,21 @@ export interface ActionArgs<
 export interface Action<
   TContext extends MachineContext,
   TEvent extends EventObject,
-  TStateValue extends string
+  TStateValue extends string,
 > {
   type: string;
   exec: (
-    args: ActionArgs<TContext, TEvent, TStateValue>
+    args: ActionArgs<TContext, TEvent, TStateValue>,
   ) => void | Record<string, any>;
 }
 
 export interface TransitionConfig<
   TContext extends MachineContext,
   TEvent extends EventObject,
-  TStateValue extends string
+  TStateValue extends string,
 > {
   target?: NoInfer<TStateValue>;
-  guards?: Guard<TContext, TEvent>[];
+  guard?: Guard<TContext, TEvent>;
   actions?: Action<TContext, TEvent, NoInfer<TStateValue>>[];
   reenter?: boolean;
 }
@@ -55,10 +52,12 @@ export interface TransitionConfig<
 export interface StateNodeConfig<
   TContext extends MachineContext,
   TEvent extends EventObject,
-  TStateValue extends string
+  TStateValue extends string,
 > {
   on?: {
-    [K in TEvent['type']]?: TransitionConfig<TContext, TEvent, TStateValue>;
+    [K in TEvent["type"]]?:
+      | TransitionConfig<TContext, TEvent, TStateValue>
+      | TransitionConfig<TContext, TEvent, TStateValue>[];
   };
   entry?: Action<TContext, TEvent, NoInfer<TStateValue>>[];
   exit?: Action<TContext, TEvent, NoInfer<TStateValue>>[];
@@ -67,24 +66,26 @@ export interface StateNodeConfig<
 export interface MachineConfig<
   TContext extends MachineContext,
   TEvent extends EventObject,
-  TStateValue extends string
+  TStateValue extends string,
 > {
   id: string;
   initial: NoInfer<TStateValue>;
   context: TContext;
   on?: {
-    [K in TEvent['type']]?: TransitionConfig<TContext, TEvent, TStateValue>;
+    [K in TEvent["type"]]?:
+      | TransitionConfig<TContext, TEvent, TStateValue>
+      | TransitionConfig<TContext, TEvent, TStateValue>[];
   };
   states: Record<TStateValue, StateNodeConfig<TContext, TEvent, TStateValue>>;
 }
 
 export interface Snapshot<
   TContext extends MachineContext,
-  TStateValue extends string
+  TStateValue extends string,
 > {
   value: TStateValue;
   context: TContext;
-  status: 'active' | 'done' | 'error' | 'stopped';
+  status: "active" | "done" | "error" | "stopped";
 }
 
 // ACTOR TYPES
@@ -92,26 +93,33 @@ export interface Snapshot<
 export interface ActorRef<
   TContext extends MachineContext,
   TEvent extends EventObject,
-  TStateValue extends string
+  TStateValue extends string,
 > {
   id: string;
   send: (event: TEvent) => void;
   getSnapshot: () => Snapshot<TContext, TStateValue>;
   subscribe: (
-    callback: (snapshot: Snapshot<TContext, TStateValue>) => void
+    callback: (snapshot: Snapshot<TContext, TStateValue>) => void,
   ) => () => void;
   start: () => void;
   stop: () => void;
   matches: (stateValue: TStateValue) => boolean;
-  // TODO: This should not be here.
-  can: (event: TEvent) => boolean;
 }
 
 export interface TransitionResult<
   TContext extends MachineContext,
   TStateValue extends string,
-  TEvent extends EventObject
+  TEvent extends EventObject,
 > {
   value: TStateValue;
+  actions: Array<Action<TContext, TEvent, TStateValue>>;
+}
+
+export interface InitialTransitionResult<
+  TContext extends MachineContext,
+  TStateValue extends string,
+  TEvent extends EventObject,
+> {
+  snapshot: Snapshot<TContext, TStateValue>;
   actions: Array<Action<TContext, TEvent, TStateValue>>;
 }

@@ -115,7 +115,7 @@ const searchMachine = createMachine({
         TYPE: {
           target: 'debouncing',
           actions: [
-            assign((ctx, event) => {
+            assign(({ event }) => {
               if (event.type !== 'TYPE') return {};
               return { query: event.query };
             }),
@@ -151,7 +151,7 @@ const searchMachine = createMachine({
           target: 'debouncing',
           reenter: true,
           actions: [
-            assign((ctx, event) => {
+            assign(({ event }) => {
               if (event.type !== 'TYPE') return {};
               return { query: event.query };
             }),
@@ -160,8 +160,8 @@ const searchMachine = createMachine({
         SEARCH: {
           target: 'loading',
           actions: [
-            assign((ctx) => ({
-              currentRequestId: ctx.currentRequestId + 1,
+            assign(({ context }) => ({
+              currentRequestId: context.currentRequestId + 1,
             })),
           ],
         },
@@ -193,7 +193,7 @@ const searchMachine = createMachine({
         TYPE: {
           target: 'debouncing',
           actions: [
-            assign((ctx, event) => {
+            assign(({ event }) => {
               if (event.type !== 'TYPE') return {};
               return { query: event.query };
             }),
@@ -202,17 +202,12 @@ const searchMachine = createMachine({
         SUCCESS: {
           target: 'success',
           // GUARD: Only accept response if it matches current request!
-          guards: [
-            {
-              type: 'isCurrentRequest',
-              condition: (ctx, event) => {
-                if (event.type !== 'SUCCESS') return false;
-                return event.requestId === ctx.currentRequestId;
-              },
-            },
-          ],
+          guard: (ctx, event) => {
+            if (event.type !== 'SUCCESS') return false;
+            return event.requestId === ctx.currentRequestId;
+          },
           actions: [
-            assign((ctx, event) => {
+            assign(({ event }) => {
               if (event.type !== 'SUCCESS') return {};
               return {
                 results: event.results,
@@ -227,7 +222,7 @@ const searchMachine = createMachine({
         ERROR: {
           target: 'error',
           actions: [
-            assign((_, event) => {
+            assign(({ event }) => {
               if (event.type !== 'ERROR') return {};
               return { error: event.error };
             }),
@@ -244,7 +239,7 @@ const searchMachine = createMachine({
         TYPE: {
           target: 'debouncing',
           actions: [
-            assign((ctx, event) => {
+            assign(({ event }) => {
               if (event.type !== 'TYPE') return {};
               return { query: event.query };
             }),
@@ -268,7 +263,7 @@ const searchMachine = createMachine({
         TYPE: {
           target: 'debouncing',
           actions: [
-            assign((ctx, event) => {
+            assign(({ event }) => {
               if (event.type !== 'TYPE') return {};
               return { query: event.query, error: null };
             }),

@@ -23,14 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ```typescript
 // Before (0.1.x) - assign with 3 type parameters
 import { assign } from '@tinystack/machine';
-const action = assign<MyContext, MyEvent, MyState>((ctx) => ({ count: ctx.count + 1 }));
+const action = assign<MyContext, MyEvent, MyState>(({ context }) => ({ count: context.count + 1 }));
 
 // After (0.2.x) - use setup() for full type inference
 import { setup } from '@tinystack/machine';
 const { createMachine, assign } = setup({
   types: {} as { context: MyContext; events: MyEvent }
 });
-const action = assign((ctx) => ({ count: ctx.count + 1 })); // Types inferred!
+const action = assign(({ context }) => ({ count: context.count + 1 })); // Types inferred!
 ```
 
 **If you were using `StateMachine` directly:**

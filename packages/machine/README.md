@@ -83,7 +83,7 @@ const toggleMachine = createMachine({
         TOGGLE: { target: 'inactive' },
         INCREMENT: {
           actions: [
-            assign((context) => ({
+            assign(({ context }) => ({
               count: context.count + 1  // Full type inference!
             }))
           ]
@@ -144,7 +144,7 @@ const counterMachine = createMachine({
       on: {
         INCREMENT: {
           actions: [
-            assign((context) => ({
+            assign(({ context }) => ({
               count: context.count + 1,
             }))
           ]
@@ -176,12 +176,7 @@ const turnstileMachine = createMachine({
       on: {
         INSERT_COIN: {
           target: 'unlocked',
-          guards: [
-            {
-              type: 'hasEnoughCoins',
-              condition: (context) => context.coins >= 3,
-            },
-          ],
+          guard: (context) => context.coins >= 3,
         },
       },
     },
@@ -192,6 +187,29 @@ const turnstileMachine = createMachine({
     },
   },
 });
+```
+
+You can also provide an array of transitions for a single event. The machine will take the first transition whose `guard` passes:
+
+```typescript
+INSERT_COIN: [
+  {
+    guard: (context) => context.coins + 1 >= 3,
+    target: 'unlocked',
+    actions: [
+      assign(({ context }) => ({
+        coins: context.coins + 1,
+      })),
+    ],
+  },
+  {
+    actions: [
+      assign(({ context }) => ({
+        coins: context.coins + 1,
+      })),
+    ],
+  },
+];
 ```
 
 ### Entry and Exit Actions
