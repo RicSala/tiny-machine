@@ -1,0 +1,15 @@
+node_modules
+dist
+.DS_Store
+coverage
+.env
+
+# my files
+.excalidraw
+.learnings
+
+.cursor
+
+# Claude.md files
+*CLAUDE.md
+*.CLAUDE.md

@@ -1,0 +1,17 @@
+{
+  "name": "machine-turbo",
+  "private": true,
+  "packageManager": "pnpm@10.26.2",
+  "scripts": {
+    "dev": "pnpm --filter @tinystack/machine build && turbo run dev test:watch",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "type:check": "turbo run type:check",
+    "test": "turbo run test",
+    "test:watch": "turbo run test:watch",
+    "typecheck": "turbo typecheck"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.8"
+  }
+}

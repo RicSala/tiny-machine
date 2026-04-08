@@ -1,0 +1,45 @@
+{
+  "name": "@tinystack/machine",
+  "version": "0.2.2",
+  "description": "A TypeScript implementation of finite state machines",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --minify",
+    "build:watch": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "dev": "pnpm build:watch",
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
+    "test:types": "vitest --typecheck.only --run",
+    "test:ui": "vitest --ui",
+    "tsc": "tsc --noEmit",
+    "typecheck": "pnpm tsc",
+    "tsc:watch": "tsc --noEmit --watch"
+  },
+  "keywords": [
+    "state-machine",
+    "typescript",
+    "fsm"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RicSala/machine"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@vitest/ui": "^3.2.4",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3",
+    "vitest": "^3.2.2"
+  }
+}
