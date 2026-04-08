@@ -12,27 +12,29 @@ The user-visible behavior should not change. The important outcome is architectu
 
 ## Progress
 
-- [x] 2026-04-08 11:35Z Created this ExecPlan and captured the current repository context, assumptions, and implementation sequence.
-- [x] 2026-04-08 11:35Z Confirmed the repository currently has no `PLANS.md`, so this plan includes all required context inline.
-- [ ] Introduce machine-side transition result data that carries a full `Snapshot` rather than only a target state value.
-- [ ] Move `assign(...)` reduction from `packages/machine/src/Actor.ts` into `packages/machine/src/StateMachine.ts` while preserving current behavior.
-- [ ] Filter runtime actions so the actor executes side effects only after the machine has already computed the next context.
-- [ ] Simplify `Actor.send(...)` and constructor initialization to consume machine-produced snapshots consistently.
-- [ ] Add and update tests that prove the machine, not the actor, now owns context evolution for `assign(...)`.
-- [ ] Run `pnpm test`, `pnpm typecheck`, `pnpm build`, and `pnpm lint` from the repository root and record outcomes in this plan.
+- [x] 2026-04-08 09:35Z Created this ExecPlan and captured the current repository context, assumptions, and implementation sequence.
+- [x] 2026-04-08 09:35Z Confirmed the repository currently has no `PLANS.md`, so this plan includes all required context inline.
+- [x] 2026-04-08 09:49Z Updated `TransitionResult` to carry a full `snapshot` so machine transitions now return the next context as part of the pure result.
+- [x] 2026-04-08 09:50Z Moved `assign(...)` context reduction from `packages/machine/src/Actor.ts` into `packages/machine/src/StateMachine.ts`.
+- [x] 2026-04-08 09:50Z Filtered runtime actions in `StateMachine.resolveActions(...)` so the actor only executes side effects after the next context is already known.
+- [x] 2026-04-08 09:50Z Simplified `Actor.send(...)` and constructor initialization to consume machine-produced snapshots directly.
+- [x] 2026-04-08 09:51Z Added and updated tests proving that machine transitions own `assign(...)` context evolution and that runtime actions still observe the correct context.
+- [x] 2026-04-08 09:52Z Resolved a regression around built-in assign detection and finalized the simpler rule that `tinymachine.assign` is reserved for the `assign(...)` helper.
+- [x] 2026-04-08 09:52Z Ran `pnpm test`, `pnpm typecheck`, `pnpm build`, and `pnpm lint` from the repository root successfully.
 
 ## Surprises & Discoveries
 
 - Observation: The repository already moved two pieces of logic out of the actor and into the machine: the `can()` query now lives on `StateMachine`, and initial entry action discovery now lives in `StateMachine.getInitialTransition()`.
   Evidence: `packages/machine/src/StateMachine.ts` now exposes `can(...)` and `getInitialTransition()`, while `packages/machine/src/Actor.ts` no longer inspects `machine.config.states[...]` for initial entry actions.
 
-- Observation: The actor currently still owns part of the pure transition algorithm because `executeActions(...)` applies `ASSIGN_ACTION_TYPE` updates to context before storing the next snapshot.
-  Evidence: In `packages/machine/src/Actor.ts`, `send(...)` calls `this.machine.transition(...)`, then immediately calls `this.executeActions(result.actions, event)` to compute `newContext`, and only after that writes `this.snapshot`.
+- Observation: Preserving action order semantics required more than simply filtering assign actions out of the action list.
+  Evidence: If the ordered action list is `[assign(count + 1), log(context.count)]`, the runtime action must observe `1`, not the old `0` and not an arbitrary later context. `packages/machine/src/StateMachine.ts` now wraps each runtime action with the context value that existed at that point in the action sequence.
 
-- Observation: The current `TransitionResult` shape is not rich enough for the desired refactor because it only returns `value` and `actions`, not the next `context`.
-  Evidence: `packages/machine/src/types.ts` defines `TransitionResult` with:
-    `value: TStateValue`
-    `actions: Array<Action<...>>`
+- Observation: Once the machine started interpreting built-in assigns during the pure transition step, hand-written runtime actions could no longer safely reuse the reserved assign type label.
+  Evidence: `packages/machine/tests/examples/timer.test.ts` originally contained custom runtime actions with `type: ASSIGN_ACTION_TYPE`. That caused the timer test to fail with `expected 'idle' to be 'ready'` because the machine quite reasonably treated those actions as built-in assigns. The fix was to stop forging assign-typed runtime actions and reserve `tinymachine.assign` for the `assign(...)` helper.
+
+- Observation: The current `TransitionResult` shape had to change before the actor could be simplified.
+  Evidence: `packages/machine/src/types.ts` now defines `TransitionResult` with a `snapshot` field rather than only `value`, which lets `Actor.send(...)` assign `this.snapshot = result.snapshot` directly.
 
 ## Decision Log
 
@@ -52,9 +54,21 @@ The user-visible behavior should not change. The important outcome is architectu
   Rationale: This aligns better with how XState conceptually separates actor runtime concerns from pure machine transition logic.
   Date/Author: 2026-04-08 / Codex
 
+- Decision: Use the reserved `tinymachine.assign` type label itself to identify built-in assign actions, and do not add extra action metadata.
+  Rationale: This keeps the implementation closer to XState’s public model and avoids extra plumbing in the action shape. The cost is that `tinymachine.assign` must be treated as reserved for the `assign(...)` helper rather than reused by hand-written runtime actions.
+  Date/Author: 2026-04-08 / Codex
+
+- Decision: Preserve action-order semantics by capturing the context visible to each runtime action at the point where it appeared in the ordered action list.
+  Rationale: After machine-side reduction, runtime actions must still observe the same context they would have seen before the refactor. Capturing the current reduced context when the runtime action is collected keeps that behavior stable even when assign and side-effect actions are interleaved.
+  Date/Author: 2026-04-08 / Codex
+
 ## Outcomes & Retrospective
 
-This section is intentionally incomplete because implementation has not started yet. At completion, record which files changed, whether the actor is now free of context-reduction logic for `assign(...)`, which tests were added or updated, and whether any follow-up work remains for richer action typing.
+The refactor is complete. `packages/machine/src/StateMachine.ts` now owns pure context evolution for both `transition(...)` and `getInitialTransition()`, and `packages/machine/src/Actor.ts` no longer merges assign return values into context. The machine computes the next snapshot, including updated context, before the actor executes remaining runtime actions.
+
+The trickiest part was not the core refactor itself; it was preserving existing semantics. Two details mattered. First, runtime actions must observe the context as it exists at their position in the action list, not simply the final context after every assign. Second, once the machine started interpreting assign actions by their type, the assign type had to become a reserved built-in label rather than something that examples manually reused for unrelated runtime actions. Both issues are now covered by tests.
+
+Follow-up work remains possible but is not required for this milestone. The current `Action` type still mixes built-in pure actions and runtime actions in one interface. If the library later adds more built-ins such as `raise(...)`, it may be worth splitting these into distinct public types. That is a future cleanup, not a blocker.
 
 ## Context and Orientation
 
@@ -130,7 +144,7 @@ After the first code pass, run the library tests and type checks first because t
 Expected outcome after the refactor:
 
     Test Files  5 passed
-    Tests  40 passed
+    Tests  45 passed
 
 The exact timing numbers may differ, but the package should finish without TypeScript errors.
 
@@ -258,3 +272,4 @@ In `packages/machine/src/Actor.ts`, keep these runtime-focused methods:
 Do not reintroduce `can(...)` on `ActorRef`; that was intentionally moved to the machine as a pure query in earlier work.
 
 Revision note: Created on 2026-04-08 to capture the planned five-step refactor that moves `assign(...)` context handling from `Actor` into `StateMachine`, after `can()` and initial transition handling had already been moved machine-side. The purpose of this note is to preserve the architectural intent and exact migration sequence for future implementation.
+Revision note: Updated on 2026-04-08 after implementation to record the final design, the assign-marker regression fix, the action-order preservation detail, and the successful verification commands.

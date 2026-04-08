@@ -1,4 +1,3 @@
-import { ASSIGN_ACTION_TYPE } from "./actions";
 import { StateMachine } from "./StateMachine";
 import {
   MachineContext,
@@ -37,16 +36,8 @@ export class Actor<
     this.machine = machine;
     this.subscribers = new Set();
     const initialTransition = this.machine.getInitialTransition();
-    const initEvent = { type: INIT_EVENT_TYPE } as TEvent;
-    const initialContext = this.executeActions(
-      initialTransition.actions,
-      initEvent,
-      initialTransition.snapshot.context,
-    );
-    this.snapshot = {
-      ...initialTransition.snapshot,
-      context: initialContext,
-    };
+    this.snapshot = initialTransition.snapshot;
+    this.executeActions(initialTransition.actions, { type: INIT_EVENT_TYPE } as TEvent);
   }
 
   getSnapshot = (): Snapshot<TContext, TStateValue> => {
@@ -121,20 +112,11 @@ export class Actor<
         return;
       }
 
-      // Execute actions and update context
-      const newContext = this.executeActions(result.actions, event);
-
       // Invalidate cache before updating snapshot
       this.lastSnapshot = null;
 
-      // Update snapshot
-      const nextSnapshot: Snapshot<TContext, TStateValue> = {
-        status: this.snapshot.status,
-        value: result.value,
-        context: newContext,
-      };
-
-      this.snapshot = nextSnapshot;
+      this.snapshot = result.snapshot;
+      this.executeActions(result.actions, event);
       this.notify();
     } catch (error) {
       this.handleError(error);
@@ -174,26 +156,14 @@ export class Actor<
   private executeActions(
     actions: Action<TContext, TEvent, TStateValue>[],
     event: TEvent,
-    baseContext: TContext = this.snapshot.context,
-  ): TContext {
-    let context = { ...baseContext };
-
+  ): void {
     actions.forEach((action) => {
-      // assign actions updates the context
-      if (action.type === ASSIGN_ACTION_TYPE) {
-        const updates = action.exec({
-          context,
-          event,
-          self: this,
-        });
-        context = { ...context, ...updates };
-      } else {
-        // other actions just execute
-        action.exec({ context, event, self: this });
-      }
+      action.exec({
+        context: this.snapshot.context,
+        event,
+        self: this,
+      });
     });
-
-    return context;
   }
 
   private handleError = (error: unknown): void => {

@@ -8,6 +8,8 @@ import {
 
 import { MachineContext, EventObject, MachineConfig, Snapshot } from "./types";
 
+const ASSIGN_ACTION_TYPE = "tinymachine.assign";
+
 /**
  * Responsibilities:
  * - Define the machine configuration
@@ -20,6 +22,46 @@ export class StateMachine<
   TStateValue extends string,
 > {
   constructor(readonly config: MachineConfig<TContext, TEvent, TStateValue>) {}
+
+  private resolveActions(
+    baseContext: TContext,
+    event: TEvent,
+    actions: Action<TContext, TEvent, TStateValue>[],
+  ): {
+    context: TContext;
+    runtimeActions: Action<TContext, TEvent, TStateValue>[];
+  } {
+    let context = { ...baseContext };
+    const runtimeActions: Action<TContext, TEvent, TStateValue>[] = [];
+
+    actions.forEach((action) => {
+      if (action.type === ASSIGN_ACTION_TYPE) {
+        const updates = action.exec({
+          context,
+          event,
+          self: undefined as never,
+        });
+        context = { ...context, ...updates };
+        return;
+      }
+
+      const actionContext = context;
+      runtimeActions.push({
+        type: action.type,
+        exec: ({ event, self }) =>
+          action.exec({
+            context: actionContext,
+            event,
+            self,
+          }),
+      });
+    });
+
+    return {
+      context,
+      runtimeActions,
+    };
+  }
 
   private normalizeTransitions(
     definition:
@@ -83,17 +125,25 @@ export class StateMachine<
     TStateValue,
     TEvent
   > {
-    const snapshot = this.getInitialSnapshot();
+    const initialSnapshot = this.getInitialSnapshot();
     const initialState = this.config.states[this.config.initial];
     const actions = initialState.entry
       ? Array.isArray(initialState.entry)
         ? initialState.entry
         : [initialState.entry]
       : [];
+    const resolvedInitial = this.resolveActions(
+      initialSnapshot.context,
+      { type: "$init" } as TEvent,
+      actions,
+    );
 
     return {
-      snapshot,
-      actions,
+      snapshot: {
+        ...initialSnapshot,
+        context: resolvedInitial.context,
+      },
+      actions: resolvedInitial.runtimeActions,
     };
   }
 
@@ -152,9 +202,15 @@ export class StateMachine<
       }
     }
 
+    const resolvedActions = this.resolveActions(snapshot.context, event, actions);
+
     return {
-      value: targetState,
-      actions,
+      snapshot: {
+        status: snapshot.status,
+        value: targetState,
+        context: resolvedActions.context,
+      },
+      actions: resolvedActions.runtimeActions,
     };
   }
 

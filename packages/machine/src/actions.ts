@@ -2,7 +2,7 @@ import { Action, ActionArgs, MachineContext } from "./types";
 
 import { EventObject } from "./types";
 
-export const ASSIGN_ACTION_TYPE = "tinymachine.assign";
+const ASSIGN_ACTION_TYPE = "tinymachine.assign";
 
 // actions.ts
 export function assign<

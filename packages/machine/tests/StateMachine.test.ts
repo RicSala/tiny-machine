@@ -89,6 +89,40 @@ describe('StateMachine', () => {
     expect(snapshot.context.count).toBe(0);
   });
 
+  it('should compute next snapshot context inside the machine transition', () => {
+    const machine = createTestMachine();
+    const result = machine.transition(machine.getInitialSnapshot(), {
+      type: 'INCREMENT',
+    });
+
+    expect(result).toBeDefined();
+    expect(result?.snapshot.value).toBe('active');
+    expect(result?.snapshot.context.count).toBe(1);
+    expect(result?.actions).toHaveLength(0);
+  });
+
+  it('should compute initial entry assign actions inside getInitialTransition', () => {
+    const machine = new StateMachine<TestContext, TestEvents, TestState>({
+      id: 'test',
+      initial: 'active',
+      context: { count: 0 },
+      states: {
+        active: {
+          entry: [
+            assign(({ context }) => ({
+              count: context.count + 2,
+            })),
+          ],
+        },
+      },
+    });
+
+    const initial = machine.getInitialTransition();
+
+    expect(initial.snapshot.context.count).toBe(2);
+    expect(initial.actions).toHaveLength(0);
+  });
+
   it('should handle transitions and update context', () => {
     const machine = createTestMachine();
     const actor = new Actor<TestContext, TestEvents, TestState>(machine);

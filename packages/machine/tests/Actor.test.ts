@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { ASSIGN_ACTION_TYPE } from '../src/actions';
+import { assign } from '../src/actions';
 import { setup } from '../src/StateMachine';
 import { Actor } from '../src/Actor';
 import type { MachineConfig, EventObject } from '../src/types';
@@ -26,12 +26,9 @@ const createTestMachine = () => {
         on: {
           INCREMENT: {
             actions: [
-              {
-                type: ASSIGN_ACTION_TYPE,
-                exec: ({ context, event, self }) => ({
-                  value: context.value + 1,
-                }),
-              },
+              assign(({ context }) => ({
+                value: context.value + 1,
+              })),
             ],
           },
         },
@@ -144,4 +141,74 @@ describe('Actor', () => {
     expect(machine.can(actor.getSnapshot(), { type: 'INCREMENT' })).toBe(true);
     expect(machine.can(actor.getSnapshot(), { type: 'NONEXISTENT' as any })).toBe(false);
   });
+
+  it('should execute runtime actions with the context resolved by machine-side assign actions', () => {
+    const seenValues: number[] = [];
+
+    const machine = setup({
+      types: {} as { context: TestContext; events: TestEvents },
+    }).createMachine({
+      id: 'test',
+      initial: 'idle',
+      context: { value: 0 },
+      states: {
+        idle: {
+          on: {
+            INCREMENT: {
+              actions: [
+                assign(({ context }) => ({
+                  value: context.value + 1,
+                })),
+                {
+                  type: 'logValue',
+                  exec: ({ context }) => {
+                    seenValues.push(context.value);
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+    });
+
+    const actor = new Actor(machine);
+    actor.send({ type: 'INCREMENT' });
+
+    expect(actor.getSnapshot().context.value).toBe(1);
+    expect(seenValues).toEqual([1]);
+  });
+
+  it('should execute initial runtime actions with the context resolved by machine-side assign actions', () => {
+    const seenValues: number[] = [];
+
+    const machine = setup({
+      types: {} as { context: TestContext; events: TestEvents },
+    }).createMachine({
+      id: 'test',
+      initial: 'idle',
+      context: { value: 0 },
+      states: {
+        idle: {
+          entry: [
+            assign(({ context }) => ({
+              value: context.value + 3,
+            })),
+            {
+              type: 'logInitialValue',
+              exec: ({ context }) => {
+                seenValues.push(context.value);
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    const actor = new Actor(machine);
+
+    expect(actor.getSnapshot().context.value).toBe(3);
+    expect(seenValues).toEqual([3]);
+  });
+
 });

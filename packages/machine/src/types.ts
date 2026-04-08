@@ -111,7 +111,7 @@ export interface TransitionResult<
   TStateValue extends string,
   TEvent extends EventObject,
 > {
-  value: TStateValue;
+  snapshot: Snapshot<TContext, TStateValue>;
   actions: Array<Action<TContext, TEvent, TStateValue>>;
 }
 

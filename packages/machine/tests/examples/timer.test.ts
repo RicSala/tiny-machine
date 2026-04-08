@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { StateMachine, setup } from '../../src/StateMachine';
-import { ASSIGN_ACTION_TYPE, assign } from '../../src/actions';
+import { assign } from '../../src/actions';
 import { MachineConfig } from '../../src/types';
 import { Actor } from '../../src/Actor';
 
@@ -61,7 +61,7 @@ describe('Timer Example', () => {
                   };
                 }),
                 {
-                  type: ASSIGN_ACTION_TYPE,
+                  type: 'assertIdle',
                   exec: ({ context, event, self }) => {
                     if (event.type !== 'INITIALIZE') return {};
                     self.matches('idle');
@@ -79,7 +79,7 @@ describe('Timer Example', () => {
               elapsed: 0,
             })),
             {
-              type: ASSIGN_ACTION_TYPE,
+              type: 'syncInitializeContext',
               exec: ({ context, event, self }) => {
                 if (event.type !== 'INITIALIZE') return {};
                 return {
