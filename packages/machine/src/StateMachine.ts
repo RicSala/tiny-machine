@@ -1,15 +1,14 @@
-import { assign as genericAssign } from "./actions";
+import { assign as genericAssign, ASSIGN_ACTION_TYPE } from "./actions";
 import {
   Action,
   ActorLogic,
   InitialTransitionResult,
+  RuntimeAction,
   TransitionConfig,
   TransitionResult,
 } from "./types";
 
 import { MachineContext, EventObject, MachineConfig, Snapshot } from "./types";
-
-const ASSIGN_ACTION_TYPE = "tinymachine.assign";
 
 /**
  * Responsibilities:
@@ -30,32 +29,28 @@ export class StateMachine<
     actions: Action<TContext, TEvent, TStateValue>[],
   ): {
     context: TContext;
-    runtimeActions: Action<TContext, TEvent, TStateValue>[];
+    runtimeActions: RuntimeAction<TContext, TEvent, TStateValue>[];
   } {
     let context = { ...baseContext };
-    const runtimeActions: Action<TContext, TEvent, TStateValue>[] = [];
+    const runtimeActions: RuntimeAction<TContext, TEvent, TStateValue>[] = [];
 
     actions.forEach((action) => {
-      if (action.type === ASSIGN_ACTION_TYPE) {
-        const updates = action.exec({
-          context,
-          event,
-          self: undefined as never,
-        });
-        context = { ...context, ...updates };
-        return;
-      }
-
-      const actionContext = context;
-      runtimeActions.push({
-        type: action.type,
-        exec: ({ event, self }) =>
-          action.exec({
+      if (typeof action === "function") {
+        const actionContext = context;
+        runtimeActions.push(({ event, self }) =>
+          action({
             context: actionContext,
             event,
             self,
           }),
-      });
+        );
+        return;
+      }
+
+      if (action.type === ASSIGN_ACTION_TYPE) {
+        const updates = action.assignment({ context, event });
+        context = { ...context, ...updates };
+      }
     });
 
     return {

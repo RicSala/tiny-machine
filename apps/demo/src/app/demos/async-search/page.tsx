@@ -125,25 +125,19 @@ const searchMachine = createMachine({
     },
     debouncing: {
       entry: [
-        {
-          type: 'startDebounce',
-          exec: ({ self }) => {
-            const timeoutId = setTimeout(() => {
-              self.send({ type: 'SEARCH' });
-            }, 300);
-            // Store timeout for cleanup (in real app, would use context)
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (self as any)._debounceTimeout = timeoutId;
-          },
+        ({ self }) => {
+          const timeoutId = setTimeout(() => {
+            self.send({ type: 'SEARCH' });
+          }, 300);
+          // Store timeout for cleanup (in real app, would use context)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (self as any)._debounceTimeout = timeoutId;
         },
       ],
       exit: [
-        {
-          type: 'clearDebounce',
-          exec: ({ self }) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            clearTimeout((self as any)._debounceTimeout);
-          },
+        ({ self }) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          clearTimeout((self as any)._debounceTimeout);
         },
       ],
       on: {
@@ -173,20 +167,17 @@ const searchMachine = createMachine({
     },
     loading: {
       entry: [
-        {
-          type: 'fetchResults',
-          exec: async ({ self, context }) => {
-            const requestId = context.currentRequestId;
-            try {
-              const { results, latency } = await searchAPI(
-                context.query,
-                requestId
-              );
-              self.send({ type: 'SUCCESS', results, requestId, latency });
-            } catch (err) {
-              self.send({ type: 'ERROR', error: (err as Error).message });
-            }
-          },
+        async ({ self, context }) => {
+          const requestId = context.currentRequestId;
+          try {
+            const { results, latency } = await searchAPI(
+              context.query,
+              requestId
+            );
+            self.send({ type: 'SUCCESS', results, requestId, latency });
+          } catch (err) {
+            self.send({ type: 'ERROR', error: (err as Error).message });
+          }
         },
       ],
       on: {

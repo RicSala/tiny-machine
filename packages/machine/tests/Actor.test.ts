@@ -159,11 +159,8 @@ describe('Actor', () => {
                 assign(({ context }) => ({
                   value: context.value + 1,
                 })),
-                {
-                  type: 'logValue',
-                  exec: ({ context }) => {
-                    seenValues.push(context.value);
-                  },
+                ({ context }) => {
+                  seenValues.push(context.value);
                 },
               ],
             },
@@ -194,11 +191,8 @@ describe('Actor', () => {
             assign(({ context }) => ({
               value: context.value + 3,
             })),
-            {
-              type: 'logInitialValue',
-              exec: ({ context }) => {
-                seenValues.push(context.value);
-              },
+            ({ context }) => {
+              seenValues.push(context.value);
             },
           ],
         },
@@ -222,11 +216,8 @@ describe('Actor', () => {
           status: 'active',
         },
         actions: [
-          {
-            type: 'logInitialValue',
-            exec: ({ context }) => {
-              seenValues.push(context.value);
-            },
+          ({ context }) => {
+            seenValues.push(context.value);
           },
         ],
       }),
@@ -242,11 +233,8 @@ describe('Actor', () => {
             status: snapshot.status,
           },
           actions: [
-            {
-              type: 'logUpdatedValue',
-              exec: ({ context }) => {
-                seenValues.push(context.value);
-              },
+            ({ context }) => {
+              seenValues.push(context.value);
             },
           ],
         };

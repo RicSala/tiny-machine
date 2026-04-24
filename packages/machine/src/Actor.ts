@@ -3,9 +3,9 @@ import {
   EventObject,
   ActorRef,
   ActorLogic,
+  RuntimeAction,
   Snapshot,
   TransitionResult,
-  Action,
 } from "./types";
 
 const INIT_EVENT_TYPE = "$init";
@@ -154,11 +154,11 @@ export class Actor<
   };
 
   private executeActions(
-    actions: Action<TContext, TEvent, TStateValue>[],
+    actions: RuntimeAction<TContext, TEvent, TStateValue>[],
     event: TEvent,
   ): void {
     actions.forEach((action) => {
-      action.exec({
+      action({
         context: this.snapshot.context,
         event,
         self: this,

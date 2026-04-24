@@ -69,16 +69,13 @@ const fetchMachine = createMachine({
     },
     loading: {
       entry: [
-        {
-          type: 'fetchData',
-          exec: async ({ self }) => {
-            try {
-              const data = await fetchData();
-              self.send({ type: 'SUCCESS', data });
-            } catch (err) {
-              self.send({ type: 'ERROR', error: (err as Error).message });
-            }
-          },
+        async ({ self }) => {
+          try {
+            const data = await fetchData();
+            self.send({ type: 'SUCCESS', data });
+          } catch (err) {
+            self.send({ type: 'ERROR', error: (err as Error).message });
+          }
         },
       ],
       on: {

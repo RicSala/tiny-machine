@@ -1,3 +1,5 @@
+import { ASSIGN_ACTION_TYPE } from "./actions";
+
 export type EventObject<TType extends string = string> = {
   type: TType;
   [key: string]: any;
@@ -27,16 +29,35 @@ export interface ActionArgs<
   self: ActorRef<TContext, TEvent, TStateValue>;
 }
 
-export interface Action<
+export type ActionFunction<
   TContext extends MachineContext,
   TEvent extends EventObject,
   TStateValue extends string,
+> = (args: ActionArgs<TContext, TEvent, TStateValue>) => void;
+
+export interface AssignAction<
+  TContext extends MachineContext,
+  TEvent extends EventObject,
 > {
-  type: string;
-  exec: (
-    args: ActionArgs<TContext, TEvent, TStateValue>,
-  ) => void | Record<string, any>;
+  type: typeof ASSIGN_ACTION_TYPE;
+  assignment: (
+    args: Pick<ActionArgs<TContext, TEvent, any>, "context" | "event">,
+  ) => Partial<TContext>;
 }
+
+export type Action<
+  TContext extends MachineContext,
+  TEvent extends EventObject,
+  TStateValue extends string,
+> =
+  | ActionFunction<TContext, TEvent, TStateValue>
+  | AssignAction<TContext, TEvent>;
+
+export type RuntimeAction<
+  TContext extends MachineContext,
+  TEvent extends EventObject,
+  TStateValue extends string,
+> = ActionFunction<TContext, TEvent, TStateValue>;
 
 export interface TransitionConfig<
   TContext extends MachineContext,
@@ -128,7 +149,7 @@ export interface TransitionResult<
   TEvent extends EventObject,
 > {
   snapshot: Snapshot<TContext, TStateValue>;
-  actions: Array<Action<TContext, TEvent, TStateValue>>;
+  actions: Array<RuntimeAction<TContext, TEvent, TStateValue>>;
 }
 
 export interface InitialTransitionResult<
@@ -137,5 +158,5 @@ export interface InitialTransitionResult<
   TEvent extends EventObject,
 > {
   snapshot: Snapshot<TContext, TStateValue>;
-  actions: Array<Action<TContext, TEvent, TStateValue>>;
+  actions: Array<RuntimeAction<TContext, TEvent, TStateValue>>;
 }

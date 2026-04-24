@@ -234,10 +234,10 @@ const timerMachine = createMachine({
     },
     running: {
       entry: [
-        { type: 'startTimer', exec: () => console.log('Timer started') }
+        () => console.log('Timer started')
       ],
       exit: [
-        { type: 'stopTimer', exec: () => console.log('Timer stopped') }
+        () => console.log('Timer stopped')
       ],
       on: { STOP: { target: 'idle' } }
     },

@@ -60,16 +60,9 @@ describe('Timer Example', () => {
                     interval: null,
                   };
                 }),
-                {
-                  type: 'assertIdle',
-                  exec: ({ context, event, self }) => {
-                    if (event.type !== 'INITIALIZE') return {};
-                    self.matches('idle');
-                    return {
-                      duration: event.duration,
-                      interval: null,
-                    };
-                  },
+                ({ event, self }) => {
+                  if (event.type !== 'INITIALIZE') return;
+                  self.matches('idle');
                 },
               ],
             },
@@ -78,15 +71,8 @@ describe('Timer Example', () => {
             assign(() => ({
               elapsed: 0,
             })),
-            {
-              type: 'syncInitializeContext',
-              exec: ({ context, event, self }) => {
-                if (event.type !== 'INITIALIZE') return {};
-                return {
-                  duration: event.duration,
-                  interval: null,
-                };
-              },
+            ({ event }) => {
+              if (event.type !== 'INITIALIZE') return;
             },
           ],
         },

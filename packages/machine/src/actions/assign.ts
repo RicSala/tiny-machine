@@ -1,10 +1,8 @@
-import { Action, ActionArgs, MachineContext } from "./types";
+import { Action, ActionArgs, MachineContext } from "../types";
+import { EventObject } from "../types";
 
-import { EventObject } from "./types";
+export const ASSIGN_ACTION_TYPE = "tinymachine.assign";
 
-const ASSIGN_ACTION_TYPE = "tinymachine.assign";
-
-// actions.ts
 export function assign<
   TContext extends MachineContext,
   TEvent extends EventObject,
@@ -15,8 +13,6 @@ export function assign<
 ): Action<TContext, TEvent, any> {
   return {
     type: ASSIGN_ACTION_TYPE,
-    exec: ({ context, event }) => {
-      return assignment({ context, event });
-    },
+    assignment,
   };
 }

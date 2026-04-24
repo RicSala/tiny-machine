@@ -96,20 +96,17 @@ const formWizardMachine = createMachine({
     },
     submitting: {
       entry: [
-        {
-          type: 'simulateSubmit',
-          exec: ({ self }) => {
-            setTimeout(() => {
-              if (Math.random() > 0.3) {
-                self.send({ type: 'SUBMIT_SUCCESS' });
-              } else {
-                self.send({
-                  type: 'SUBMIT_ERROR',
-                  error: 'Network error. Please try again.',
-                });
-              }
-            }, 1500);
-          },
+        ({ self }) => {
+          setTimeout(() => {
+            if (Math.random() > 0.3) {
+              self.send({ type: 'SUBMIT_SUCCESS' });
+            } else {
+              self.send({
+                type: 'SUBMIT_ERROR',
+                error: 'Network error. Please try again.',
+              });
+            }
+          }, 1500);
         },
       ],
       on: {

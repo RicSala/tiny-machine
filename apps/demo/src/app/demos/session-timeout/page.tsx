@@ -75,29 +75,23 @@ const sessionMachine = createMachine({
   states: {
     active: {
       entry: [
-        {
-          type: 'startIdleTimer',
-          exec: ({ self }) => {
-            const checkIdle = () => {
-              const timerId = setTimeout(() => {
-                self.send({ type: 'IDLE_TIMEOUT' });
-              }, IDLE_TIMEOUT_MS);
-              getSessionTimers(self).idleTimerId = timerId;
-            };
-            checkIdle();
-          },
+        ({ self }) => {
+          const checkIdle = () => {
+            const timerId = setTimeout(() => {
+              self.send({ type: 'IDLE_TIMEOUT' });
+            }, IDLE_TIMEOUT_MS);
+            getSessionTimers(self).idleTimerId = timerId;
+          };
+          checkIdle();
         },
       ],
       exit: [
-        {
-          type: 'clearIdleTimer',
-          exec: ({ self }) => {
-            const timers = getSessionTimers(self);
-            if (timers.idleTimerId) {
-              clearTimeout(timers.idleTimerId);
-              timers.idleTimerId = null;
-            }
-          },
+        ({ self }) => {
+          const timers = getSessionTimers(self);
+          if (timers.idleTimerId) {
+            clearTimeout(timers.idleTimerId);
+            timers.idleTimerId = null;
+          }
         },
       ],
       on: {
@@ -124,28 +118,22 @@ const sessionMachine = createMachine({
           warningStartedAt: Date.now(),
           secondsRemaining: WARNING_DURATION_MS / 1000,
         })),
-        {
-          type: 'startWarningCountdown',
-          exec: ({ self }) => {
-            const intervalId = setInterval(() => {
-              // First decrement, then check if expired
-              self.send({ type: 'TICK_DECREMENT' });
-              self.send({ type: 'TICK' });
-            }, 1000);
-            getSessionTimers(self).warningIntervalId = intervalId;
-          },
+        ({ self }) => {
+          const intervalId = setInterval(() => {
+            // First decrement, then check if expired
+            self.send({ type: 'TICK_DECREMENT' });
+            self.send({ type: 'TICK' });
+          }, 1000);
+          getSessionTimers(self).warningIntervalId = intervalId;
         },
       ],
       exit: [
-        {
-          type: 'clearWarningCountdown',
-          exec: ({ self }) => {
-            const timers = getSessionTimers(self);
-            if (timers.warningIntervalId) {
-              clearInterval(timers.warningIntervalId);
-              timers.warningIntervalId = null;
-            }
-          },
+        ({ self }) => {
+          const timers = getSessionTimers(self);
+          if (timers.warningIntervalId) {
+            clearInterval(timers.warningIntervalId);
+            timers.warningIntervalId = null;
+          }
         },
       ],
       on: {

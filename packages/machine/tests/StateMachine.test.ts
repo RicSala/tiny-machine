@@ -176,21 +176,15 @@ describe('StateMachine', () => {
       states: {
         active: {
           entry: [
-            {
-              type: 'logEntry',
-              exec: () => {
-                console.log('entered active');
-                sideEffects.push('entered active');
-              },
+            () => {
+              console.log('entered active');
+              sideEffects.push('entered active');
             },
           ],
           exit: [
-            {
-              type: 'logExit',
-              exec: () => {
-                console.log('exited active');
-                sideEffects.push('exited active');
-              },
+            () => {
+              console.log('exited active');
+              sideEffects.push('exited active');
             },
           ],
           on: {
